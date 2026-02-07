@@ -23,7 +23,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // avoid concurrent refresh calls
   const refreshPromiseRef = React.useRef<Promise<string | null> | null>(null);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
   // Load user from localStorage on mount
   useEffect(() => {
@@ -31,35 +31,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (savedUser) {
       setUser(JSON.parse(savedUser));
     }
-  }, []);
-
-  // Monitor localStorage changes for debugging
-  useEffect(() => {
-    const checkTokens = () => {
-      const accessToken = localStorage.getItem('access_token');
-      const refreshToken = localStorage.getItem('refresh_token');
-      console.log('Token check:', { accessToken: !!accessToken, refreshToken: !!refreshToken });
-    };
-
-    // Check immediately
-    checkTokens();
-
-    // Check every 1 second for debugging
-    const interval = setInterval(checkTokens, 1000);
-
-    // Listen for storage events
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'access_token' || e.key === 'refresh_token') {
-        console.log('Storage event:', e.key, e.oldValue ? 'changed' : 'removed', 'new value:', e.newValue ? 'present' : 'null');
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('storage', handleStorageChange);
-    };
   }, []);
 
   const login = useCallback(async (email: string, pass: string) => {
@@ -74,10 +45,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!response.ok) throw new Error('Login failed');
 
       const data = await response.json();
-      console.log('Login successful, tokens received:', data);
       localStorage.setItem('access_token', data.access_token);
       localStorage.setItem('refresh_token', data.refresh_token);
-      console.log('Login: Tokens saved to localStorage');
 
       const newUser: User = {
         email,
@@ -109,10 +78,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!response.ok) throw new Error('Registration failed');
 
       const data = await response.json();
-      console.log('Register successful, tokens received:', data);
       localStorage.setItem('access_token', data.access_token);
       localStorage.setItem('refresh_token', data.refresh_token);
-      console.log('Register: Tokens saved to localStorage');
 
       const newUser: User = {
         email,
@@ -139,9 +106,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const promise = (async () => {
       try {
         const refreshTokenValue = localStorage.getItem('refresh_token');
-        console.log('refreshToken(): refresh token present:', !!refreshTokenValue);
         if (!refreshTokenValue) {
-          console.log('refreshToken(): no refresh token, aborting');
           return null;
         }
 
@@ -151,18 +116,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           body: JSON.stringify({ refresh_token: refreshTokenValue }),
         });
 
-        console.log('refreshToken(): refresh endpoint response status:', response.status);
-
         if (!response.ok) {
-          console.log('refreshToken(): refresh endpoint returned non-ok status');
           return null;
         }
 
         const data = await response.json();
-        console.log('refreshToken(): refresh response data:', data);
         // persist new access token and return it
         localStorage.setItem('access_token', data.access_token);
-        console.log('refreshToken(): saved new access_token to localStorage');
         return data.access_token as string;
       } catch (error) {
         console.error('Refresh token error:', error);
@@ -209,10 +169,10 @@ export const useAuth = () => {
   if (!context) {
     return {
       user: null,
-      login: () => { },
-      register: () => { },
-      loginAsGuest: () => { },
-      logout: () => { },
+      login: () => {},
+      register: () => {},
+      loginAsGuest: () => {},
+      logout: () => {},
       refreshToken: () => Promise.resolve(null),
       loading: true,
     };

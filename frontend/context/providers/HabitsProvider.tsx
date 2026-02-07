@@ -20,7 +20,7 @@ export const HabitsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [habits, setHabits] = useState<Habit[]>([]);
   const { refreshToken } = useAuth();
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
   // Helper function to make authenticated API calls with automatic token refresh
   const makeAuthenticatedRequest = useCallback(async (url: string, options: RequestInit = {}) => {
@@ -29,33 +29,24 @@ export const HabitsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       throw new Error('No access token found');
     }
 
-    console.log('makeAuthenticatedRequest(): initial token (first 20 chars):', token.slice(0, 20));
-
     let headers = {
       Authorization: `Bearer ${token}`,
       ...options.headers,
     };
 
-    console.log('Making authenticated request to:', url, 'with token present:', !!token);
     let response = await fetch(url, { ...options, headers });
-    console.log('Initial response status:', response.status);
 
     // If we get a 401, try to refresh the token
     if (response.status === 401) {
-      console.log('Got 401, attempting token refresh...');
       const newToken = await refreshToken();
-      console.log('Refresh result:', newToken ? 'success' : 'failed');
       if (newToken) {
         // Retry the request with the new token (use token returned from refresh)
         token = newToken;
-        console.log('makeAuthenticatedRequest(): new token (first 20 chars):', token.slice(0, 20));
         const newHeaders = {
           ...options.headers,
           Authorization: `Bearer ${token}`,
         } as Record<string, string>;
-        console.log('Retrying request with new token...');
         response = await fetch(url, { ...options, headers: newHeaders });
-        console.log('Retry response status:', response.status);
       }
     }
 
@@ -82,24 +73,10 @@ export const HabitsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const fetchHabits = useCallback(async () => {
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        console.log('fetchHabits: No access token, skipping fetch');
-        return;
-      }
-
       const response = await makeAuthenticatedRequest(`${API_URL}/habits`);
 
       if (response.status === 401) {
-        // makeAuthenticatedRequest đã thử refresh token nhưng vẫn thất bại
-        // Chỉ xóa tokens khi refresh token cũng hết hạn
-        const refreshTokenValue = localStorage.getItem('refresh_token');
-        if (!refreshTokenValue) {
-          // Không có refresh token → đã logout hoặc chưa login
-          console.log('fetchHabits: No refresh token, user not logged in');
-          return;
-        }
-        // Có refresh token nhưng vẫn 401 → refresh token hết hạn
+        // Token refresh failed or refresh token expired
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('user');
@@ -120,7 +97,7 @@ export const HabitsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     } catch (error) {
       if (error instanceof Error && error.message === 'No access token found') {
-        console.log('fetchHabits: No access token found in makeAuthenticatedRequest');
+        toast.error('Please login to view your habits');
       } else {
         console.error('Fetch habits error:', error);
         toast.error('Failed to fetch habits');
@@ -130,12 +107,6 @@ export const HabitsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const addHabit = useCallback(async (habitData: Omit<Habit, 'id' | 'logs'>) => {
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        toast.error('Please login to create habits');
-        return;
-      }
-
       const response = await makeAuthenticatedRequest(`${API_URL}/habits`, {
         method: 'POST',
         headers: {
@@ -145,12 +116,7 @@ export const HabitsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       });
 
       if (response.status === 401) {
-        // makeAuthenticatedRequest đã thử refresh token nhưng vẫn thất bại
-        const refreshTokenValue = localStorage.getItem('refresh_token');
-        if (!refreshTokenValue) {
-          toast.error('Please login to continue.');
-          return;
-        }
+        // Token refresh failed or refresh token expired
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('user');
@@ -176,12 +142,6 @@ export const HabitsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const updateHabit = useCallback(async (id: string, updates: Partial<Habit>) => {
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        toast.error('Please login to update habits');
-        return;
-      }
-
       const response = await makeAuthenticatedRequest(`${API_URL}/habits/${id}`, {
         method: 'PATCH',
         headers: {
@@ -191,12 +151,7 @@ export const HabitsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       });
 
       if (response.status === 401) {
-        // makeAuthenticatedRequest đã thử refresh token nhưng vẫn thất bại
-        const refreshTokenValue = localStorage.getItem('refresh_token');
-        if (!refreshTokenValue) {
-          toast.error('Please login to continue.');
-          return;
-        }
+        // Token refresh failed or refresh token expired
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('user');
@@ -222,23 +177,12 @@ export const HabitsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const deleteHabit = useCallback(async (id: string) => {
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        toast.error('Please login to delete habits');
-        return;
-      }
-
       const response = await makeAuthenticatedRequest(`${API_URL}/habits/${id}`, {
         method: 'DELETE',
       });
 
       if (response.status === 401) {
-        // makeAuthenticatedRequest đã thử refresh token nhưng vẫn thất bại
-        const refreshTokenValue = localStorage.getItem('refresh_token');
-        if (!refreshTokenValue) {
-          toast.error('Please login to continue.');
-          return;
-        }
+        // Token refresh failed or refresh token expired
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('user');
@@ -264,12 +208,6 @@ export const HabitsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const toggleHabitLog = useCallback(async (habitId: string, date: string) => {
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        toast.error('Please login to log habits');
-        return;
-      }
-
       const response = await makeAuthenticatedRequest(`${API_URL}/habits/${habitId}/logs/checkin`, {
         method: 'POST',
         headers: {
@@ -279,14 +217,9 @@ export const HabitsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       });
 
       if (response.status === 401) {
-        // makeAuthenticatedRequest đã thử refresh token nhưng vẫn thất bại
-        const refreshTokenValue = localStorage.getItem('refresh_token');
-        if (!refreshTokenValue) {
-          toast.error('Please login to continue.');
-          return;
-        }
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
+        // Token refresh failed or refresh token expired
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
         toast.error('Session expired. Please login again.');
         return;
@@ -306,7 +239,7 @@ export const HabitsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         toast.error('Failed to log habit');
       }
     }
-  }, [API_URL, fetchHabits, makeAuthenticatedRequest]); return (
+  }, [API_URL, fetchHabits, makeAuthenticatedRequest]);  return (
     <HabitsContext.Provider value={{
       habits,
       fetchHabits,
