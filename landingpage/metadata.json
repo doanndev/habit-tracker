@@ -1,0 +1,8 @@
+{
+  "name": "HabitFlow Landing Page",
+  "description": "A high-conversion marketing landing page for HabitFlow, a modern visual habit tracking SaaS. Features a clean SaaS aesthetic, contribution-style habit grids, and AI-powered habit recommendations.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
