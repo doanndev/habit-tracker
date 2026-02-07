@@ -11,22 +11,41 @@ const Login: React.FC = () => {
 
   // Always call hooks in the same order - never conditionally
   const { t } = useLanguage();
-  const { login, loginAsGuest, loading } = useAuth();
+  const { login, loginAsGuest, loading, user } = useAuth();
 
-  const [email, setEmail] = useState('');
-  const [pass, setPass] = useState('');
+  const [email, setEmail] = useState('doann.dev@gmail.com');
+  const [pass, setPass] = useState('123123');
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // Show loading state while hooks are initializing
+  // Redirect to dashboard if already logged in
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/');
+    }
+  }, [user, loading, router]);
+
+  // Show loading state while auth is being determined
   if (loading && !isClient) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-slate-500">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If user is already authenticated, don't show login form
+  if (user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-slate-500">Redirecting to dashboard...</p>
         </div>
       </div>
     );
@@ -117,7 +136,7 @@ const Login: React.FC = () => {
         </div>
 
         <p className="mt-8 text-sm text-slate-500 font-medium">
-          Don't have an account? <Link href="/Register" className="text-primary font-bold hover:underline">Sign up for free</Link>
+          Don't have an account? <Link href="/register" className="text-primary font-bold hover:underline">Sign up for free</Link>
         </p>
       </div>
     </div>

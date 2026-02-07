@@ -11,7 +11,7 @@ const Register: React.FC = () => {
 
   // Always call hooks in the same order - never conditionally
   const { t } = useLanguage();
-  const { register, loginAsGuest, loading } = useAuth();
+  const { register, loginAsGuest, loading, user } = useAuth();
 
   const [email, setEmail] = useState('');
   const [pass, setPass] = useState('');
@@ -21,13 +21,32 @@ const Register: React.FC = () => {
     setIsClient(true);
   }, []);
 
-  // Show loading state while hooks are initializing
+  // Redirect to dashboard if already logged in
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/');
+    }
+  }, [user, loading, router]);
+
+  // Show loading state while auth is being determined
   if (loading && !isClient) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-slate-500">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If user is already authenticated, don't show register form
+  if (user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-slate-500">Redirecting to dashboard...</p>
         </div>
       </div>
     );
@@ -132,7 +151,7 @@ const Register: React.FC = () => {
         </div>
 
         <p className="mt-8 text-sm text-slate-500 font-medium">
-          {t('alreadyHaveAccount')} <Link href="/Login" className="text-primary font-bold hover:underline">{t('signInLink')}</Link>
+          {t('alreadyHaveAccount')} <Link href="/login" className="text-primary font-bold hover:underline">{t('signInLink')}</Link>
         </p>
       </div>
     </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useHabits, useAuth, useLanguage, useTheme } from '../context/AppContext';
 import HabitModal from '../components/HabitModal';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
@@ -13,6 +14,7 @@ import { Habit } from '../types';
 export const dynamic = 'force-dynamic';
 
 const Dashboard: React.FC = () => {
+  const router = useRouter();
   const [selectedHabitId, setSelectedHabitId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Habit | undefined>(undefined);
@@ -23,6 +25,13 @@ const Dashboard: React.FC = () => {
   const { user, logout, loading } = useAuth();
   const { t, language, setLanguage } = useLanguage();
   const { theme, toggleTheme } = useTheme();
+
+  // Check authentication and redirect if not logged in
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
 
   useEffect(() => {
     if (user && !habitsLoaded) {
@@ -40,8 +49,8 @@ const Dashboard: React.FC = () => {
     }
   }, [habits, selectedHabitId]);
 
-  // Show loading state while auth is loading
-  if (loading) {
+  // Show loading state while auth is loading or user is not authenticated
+  if (loading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -74,17 +83,6 @@ const Dashboard: React.FC = () => {
       // Error is handled by toast in HabitsProvider
     }
   };
-
-  if (loading && habits.length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-slate-500">Loading your habits...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen pb-12">

@@ -38,8 +38,8 @@ export class AuthService {
 
     const payload = { email: user.email, sub: user.id };
     return {
-      access_token: this.jwtService.sign(payload, { expiresIn: '5m' }),
-      refresh_token: this.jwtService.sign(payload, { expiresIn: '7d' }),
+      access_token: this.jwtService.sign(payload, { expiresIn: process.env.ACCESS_TOKEN_TTL || '5m' } as any),
+      refresh_token: this.jwtService.sign(payload, { expiresIn: process.env.REFRESH_TOKEN_TTL || '7d' } as any),
     };
   }
 
@@ -63,8 +63,8 @@ export class AuthService {
 
     const payload = { email: user.email, sub: user.id };
     return {
-      access_token: this.jwtService.sign(payload, { expiresIn: '5m' }),
-      refresh_token: this.jwtService.sign(payload, { expiresIn: '7d' }),
+      access_token: this.jwtService.sign(payload, { expiresIn: process.env.ACCESS_TOKEN_TTL || '5m' } as any),
+      refresh_token: this.jwtService.sign(payload, { expiresIn: process.env.REFRESH_TOKEN_TTL || '7d' } as any),
     };
   }
 
@@ -78,8 +78,9 @@ export class AuthService {
       // Create new access token
 
       const newPayload = { email: payload.email, sub: payload.sub };
+      const accessTokenTtl = process.env.ACCESS_TOKEN_TTL || '5m';
       return {
-        access_token: this.jwtService.sign(newPayload, { expiresIn: '5m' }),
+        access_token: this.jwtService.sign(newPayload, { expiresIn: accessTokenTtl } as any),
       };
     } catch {
       throw new UnauthorizedException('Invalid refresh token');

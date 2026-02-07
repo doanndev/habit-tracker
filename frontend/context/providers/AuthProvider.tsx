@@ -11,7 +11,8 @@ interface AuthContextType {
   register: (email: string, pass: string) => Promise<void>;
   loginAsGuest: () => void;
   logout: () => void;
-  refreshToken: () => Promise<boolean>;
+  // returns the new access token string when successful, otherwise null
+  refreshToken: () => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,8 +20,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
+  // avoid concurrent refresh calls
+  const refreshPromiseRef = React.useRef<Promise<string | null> | null>(null);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
   // Load user from localStorage on mount
   useEffect(() => {
@@ -28,6 +31,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (savedUser) {
       setUser(JSON.parse(savedUser));
     }
+  }, []);
+
+  // Monitor localStorage changes for debugging
+  useEffect(() => {
+    const checkTokens = () => {
+      const accessToken = localStorage.getItem('access_token');
+      const refreshToken = localStorage.getItem('refresh_token');
+      console.log('Token check:', { accessToken: !!accessToken, refreshToken: !!refreshToken });
+    };
+
+    // Check immediately
+    checkTokens();
+
+    // Check every 1 second for debugging
+    const interval = setInterval(checkTokens, 1000);
+
+    // Listen for storage events
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'access_token' || e.key === 'refresh_token') {
+        console.log('Storage event:', e.key, e.oldValue ? 'changed' : 'removed', 'new value:', e.newValue ? 'present' : 'null');
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   const login = useCallback(async (email: string, pass: string) => {
@@ -42,11 +74,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!response.ok) throw new Error('Login failed');
 
       const data = await response.json();
-      localStorage.setItem('token', data.access_token);
+      console.log('Login successful, tokens received:', data);
+      localStorage.setItem('access_token', data.access_token);
       localStorage.setItem('refresh_token', data.refresh_token);
+      console.log('Login: Tokens saved to localStorage');
 
       const newUser: User = {
-        id: '1',
         email,
         name: email.split('@')[0],
         avatar: 'https://picsum.photos/seed/alex/100/100',
@@ -54,7 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
       setUser(newUser);
       localStorage.setItem('user', JSON.stringify(newUser));
-      toast.success('Welcome back! 🎉');
+      toast.success('Welcome back! ');
     } catch (error) {
       console.error('Login error:', error);
       toast.error('Login failed. Please check your credentials.');
@@ -76,11 +109,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!response.ok) throw new Error('Registration failed');
 
       const data = await response.json();
-      localStorage.setItem('token', data.access_token);
+      console.log('Register successful, tokens received:', data);
+      localStorage.setItem('access_token', data.access_token);
       localStorage.setItem('refresh_token', data.refresh_token);
+      console.log('Register: Tokens saved to localStorage');
 
       const newUser: User = {
-        id: '1',
         email,
         name: email.split('@')[0],
         avatar: 'https://picsum.photos/seed/alex/100/100',
@@ -98,35 +132,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [API_URL]);
 
-  const refreshToken = useCallback(async (): Promise<boolean> => {
-    try {
-      const refreshTokenValue = localStorage.getItem('refresh_token');
-      if (!refreshTokenValue) {
-        return false;
+  const refreshToken = useCallback(async (): Promise<string | null> => {
+    // If a refresh is already in progress, return the same promise so callers wait on it.
+    if (refreshPromiseRef.current) return refreshPromiseRef.current;
+
+    const promise = (async () => {
+      try {
+        const refreshTokenValue = localStorage.getItem('refresh_token');
+        console.log('refreshToken(): refresh token present:', !!refreshTokenValue);
+        if (!refreshTokenValue) {
+          console.log('refreshToken(): no refresh token, aborting');
+          return null;
+        }
+
+        const response = await fetch(`${API_URL}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh_token: refreshTokenValue }),
+        });
+
+        console.log('refreshToken(): refresh endpoint response status:', response.status);
+
+        if (!response.ok) {
+          console.log('refreshToken(): refresh endpoint returned non-ok status');
+          return null;
+        }
+
+        const data = await response.json();
+        console.log('refreshToken(): refresh response data:', data);
+        // persist new access token and return it
+        localStorage.setItem('access_token', data.access_token);
+        console.log('refreshToken(): saved new access_token to localStorage');
+        return data.access_token as string;
+      } catch (error) {
+        console.error('Refresh token error:', error);
+        return null;
+      } finally {
+        // clear the ref so future refreshes can run
+        refreshPromiseRef.current = null;
       }
+    })();
 
-      const response = await fetch(`${API_URL}/auth/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh_token: refreshTokenValue }),
-      });
-
-      if (!response.ok) {
-        return false;
-      }
-
-      const data = await response.json();
-      localStorage.setItem('token', data.access_token);
-      return true;
-    } catch (error) {
-      console.error('Refresh token error:', error);
-      return false;
-    }
+    refreshPromiseRef.current = promise;
+    return promise;
   }, [API_URL]);
 
   const loginAsGuest = useCallback(() => {
     const guest: User = {
-      id: 'guest',
       email: 'guest@example.com',
       name: 'Guest User',
       avatar: 'https://picsum.photos/seed/guest/100/100',
@@ -139,7 +191,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = useCallback(() => {
     setUser(null);
     localStorage.removeItem('user');
-    localStorage.removeItem('token');
+    localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     toast.success('Logged out successfully');
   }, []);
@@ -157,11 +209,11 @@ export const useAuth = () => {
   if (!context) {
     return {
       user: null,
-      login: () => {},
-      register: () => {},
-      loginAsGuest: () => {},
-      logout: () => {},
-      refreshToken: () => Promise.resolve(false),
+      login: () => { },
+      register: () => { },
+      loginAsGuest: () => { },
+      logout: () => { },
+      refreshToken: () => Promise.resolve(null),
       loading: true,
     };
   }
