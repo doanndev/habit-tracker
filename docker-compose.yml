@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: habit-tracker-postgres
+    environment:
+      POSTGRES_DB: habit_tracker
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - habit-tracker
+
+  redis:
+    image: redis:7-alpine
+    container_name: habit-tracker-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - habit-tracker
+
+volumes:
+  postgres_data:
+
+networks:
+  habit-tracker:
+    driver: bridge
