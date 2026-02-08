@@ -1,13 +1,19 @@
 
 import React, { useState, useMemo } from 'react';
-import { useApp } from '../context/AppContext';
+import { useHabits } from '../context/HabitContext';
+import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 import HabitHeatmap from '../components/HabitHeatmap';
 import HabitModal from '../components/HabitModal';
 import { calculateStats } from '../utils/streak';
 import { Habit } from '../types';
 
 const Dashboard: React.FC = () => {
-  const { habits, user, t, toggleHabitLog, theme, toggleTheme, language, setLanguage, logout } = useApp();
+  const { habits, toggleHabitLog } = useHabits();
+  const { user, logout } = useAuth();
+  const { t, language, setLanguage } = useLanguage();
+  const { theme, toggleTheme } = useTheme();
   const [selectedHabitId, setSelectedHabitId] = useState<string | null>(habits[0]?.id || null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Habit | undefined>(undefined);
@@ -43,13 +49,13 @@ const Dashboard: React.FC = () => {
           <div className="flex items-center gap-4">
             {/* Lang Switcher */}
             <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-              <button 
+              <button
                 onClick={() => setLanguage('en')}
                 className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${language === 'en' ? 'bg-white dark:bg-slate-700 shadow-sm' : 'opacity-50'}`}
               >
                 EN
               </button>
-              <button 
+              <button
                 onClick={() => setLanguage('vi')}
                 className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${language === 'vi' ? 'bg-white dark:bg-slate-700 shadow-sm' : 'opacity-50'}`}
               >
@@ -69,10 +75,10 @@ const Dashboard: React.FC = () => {
             {/* User Profile */}
             <div className="group relative">
               <button className="flex items-center gap-3 pl-2 pr-1 py-1 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
-                <div className="text-right hidden md:block">
+                {/* <div className="text-right hidden md:block">
                   <p className="text-sm font-bold leading-none">{user?.name}</p>
                   <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wider">{t('level')} {user?.level}</p>
-                </div>
+                </div> */}
                 <img className="size-9 rounded-xl object-cover ring-2 ring-primary/10" src={user?.avatar} alt="User" />
               </button>
               <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
@@ -87,7 +93,7 @@ const Dashboard: React.FC = () => {
 
       <main className="max-w-7xl mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
+
           {/* Left: Habit List */}
           <aside className="lg:col-span-4 space-y-6">
             <div className="flex items-center justify-between px-2">
@@ -110,7 +116,7 @@ const Dashboard: React.FC = () => {
                   const hStats = calculateStats(habit);
 
                   return (
-                    <div 
+                    <div
                       key={habit.id}
                       onClick={() => setSelectedHabitId(habit.id)}
                       className={`group cursor-pointer relative bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border-2 transition-all active:scale-[0.98] ${
@@ -119,7 +125,7 @@ const Dashboard: React.FC = () => {
                     >
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex items-start gap-4">
-                          <div className="size-3.5 rounded-full mt-1.5 transition-transform" style={{ 
+                          <div className="size-3.5 rounded-full mt-1.5 transition-transform" style={{
                             backgroundColor: habit.color,
                             boxShadow: `0 0 10px ${habit.color}66`
                           }}></div>
@@ -131,11 +137,11 @@ const Dashboard: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                      <button 
+                      <button
                         onClick={(e) => { e.stopPropagation(); toggleHabitLog(habit.id, todayStr); }}
                         className={`w-full font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all ${
-                          isDone 
-                          ? 'bg-emerald-500 text-white' 
+                          isDone
+                          ? 'bg-emerald-500 text-white'
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                         }`}
                       >
@@ -160,7 +166,7 @@ const Dashboard: React.FC = () => {
                     <p className="text-slate-500 dark:text-slate-400 font-medium text-lg leading-relaxed">{selectedHabit.description || 'No description provided.'}</p>
                   </div>
                   <div className="flex gap-3">
-                    <button 
+                    <button
                       onClick={() => handleEdit(selectedHabit)}
                       className="px-6 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                     >
@@ -247,10 +253,10 @@ const Dashboard: React.FC = () => {
       </footer>
 
       {/* Habit Modal */}
-      <HabitModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        editHabit={editingHabit} 
+      <HabitModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        editHabit={editingHabit}
       />
     </div>
   );

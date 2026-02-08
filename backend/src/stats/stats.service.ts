@@ -1,16 +1,23 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { HabitLog } from '../habit-logs/habit-log.entity';
+import { Habit } from '../habits/habit.entity';
 
 @Injectable()
 export class StatsService {
   constructor(
     @InjectRepository(HabitLog)
     private habitLogRepository: Repository<HabitLog>,
+    @InjectRepository(Habit)
+    private habitRepository: Repository<Habit>,
   ) {}
 
-  async getHabitStats(habitId: string) {
+  async getHabitStats(userId: string, habitId: string) {
+    // ensure habit belongs to the authenticated user
+    const habit = await this.habitRepository.findOne({ where: { id: habitId, user_id: userId } });
+    if (!habit) throw new NotFoundException('Habit not found');
+
     const logs = await this.habitLogRepository.find({
       where: { habit_id: habitId },
       order: { date: 'DESC' },

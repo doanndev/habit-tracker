@@ -1,8 +1,9 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer, RequestMethod } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { JwtMiddleware } from './auth/jwt.middleware';
 import { AuthModule } from './auth/auth.module';
 import { HabitsModule } from './habits/habits.module';
 import { HabitLogsModule } from './habit-logs/habit-logs.module';
@@ -30,6 +31,18 @@ import { HabitLog } from './habit-logs/habit-log.entity';
     StatsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, JwtMiddleware],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    // Apply JWT middleware to protected routes. These routes expect a Bearer token in Authorization header.
+    consumer
+      .apply(JwtMiddleware)
+      .forRoutes(
+        { path: 'habits', method: RequestMethod.ALL },
+        { path: 'habits/:habitId/logs', method: RequestMethod.ALL },
+        { path: 'stats', method: RequestMethod.ALL },
+      );
+  }
+}
+

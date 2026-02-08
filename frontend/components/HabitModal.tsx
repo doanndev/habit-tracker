@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { useApp } from '../context/AppContext';
+import { useLanguage } from '../context/LanguageContext';
+import { useHabits } from '../context/HabitContext';
 // Fix: Import Habit from '../types' instead of '../constants'
 import { HABIT_COLORS } from '../constants';
 import { Habit, Frequency } from '../types';
@@ -12,7 +13,8 @@ interface HabitModalProps {
 }
 
 const HabitModal: React.FC<HabitModalProps> = ({ isOpen, onClose, editHabit }) => {
-  const { t, addHabit, updateHabit } = useApp();
+  const { t } = useLanguage();
+  const { addHabit, updateHabit } = useHabits();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [frequency, setFrequency] = useState<Frequency>('daily');

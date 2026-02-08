@@ -46,6 +46,11 @@ export const TRANSLATIONS: Record<string, any> = {
     level: 'Level',
     noHabits: 'No habits yet. Start your journey!',
     newHabit: 'New Habit',
+    habitCreated: 'Habit created',
+    error: 'Something went wrong',
+    loginSuccess: 'Logged in successfully!',
+    loginGuest: 'Signed in as guest!',
+    logoutSuccess: 'You have been logged out.',
   },
   vi: {
     appName: 'HabitPulse',
@@ -75,5 +80,10 @@ export const TRANSLATIONS: Record<string, any> = {
     level: 'Cấp độ',
     noHabits: 'Chưa có thói quen nào. Hãy bắt đầu hành trình!',
     newHabit: 'Thói quen mới',
+    habitCreated: 'Đã tạo thói quen',
+    error: 'Đã xảy ra lỗi',
+    loginSuccess: 'Đăng nhập thành công!',
+    loginGuest: 'Đã đăng nhập với tư cách khách!',
+    logoutSuccess: 'Bạn đã đăng xuất.',
   }
 };

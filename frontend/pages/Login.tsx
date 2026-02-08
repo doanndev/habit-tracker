@@ -1,9 +1,11 @@
 
 import React, { useState } from 'react';
-import { useApp } from '../context/AppContext';
+import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 
 const Login: React.FC = () => {
-  const { t, login, loginAsGuest } = useApp();
+  const { t } = useLanguage();
+  const { login, loginAsGuest } = useAuth();
   const [email, setEmail] = useState('');
   const [pass, setPass] = useState('');
 
@@ -30,6 +32,7 @@ const Login: React.FC = () => {
               <input
                 type="email"
                 required
+                autoComplete="username"
                 className="w-full h-12 px-4 rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none"
                 placeholder="name@example.com"
                 value={email}
@@ -44,6 +47,7 @@ const Login: React.FC = () => {
               <input
                 type="password"
                 required
+                autoComplete="current-password"
                 className="w-full h-12 px-4 rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none"
                 placeholder="••••••••"
                 value={pass}
