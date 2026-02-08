@@ -1,68 +1,19 @@
-'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { useLanguage, useAuth } from '../context/AppContext';
+import React, { useState } from 'react';
+import { useApp } from '../context/AppContext';
 
 const Login: React.FC = () => {
-  const router = useRouter();
-  const [isClient, setIsClient] = useState(false);
+  const { t, login, loginAsGuest } = useApp();
+  const [email, setEmail] = useState('');
+  const [pass, setPass] = useState('');
 
-  // Always call hooks in the same order - never conditionally
-  const { t } = useLanguage();
-  const { login, loginAsGuest, loading, user } = useAuth();
-
-  const [email, setEmail] = useState('doann.dev@gmail.com');
-  const [pass, setPass] = useState('123123');
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  // Redirect to dashboard if already logged in
-  useEffect(() => {
-    if (!loading && user) {
-      router.push('/');
-    }
-  }, [user, loading, router]);
-
-  // Show loading state while auth is being determined
-  if (loading && !isClient) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-slate-500">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // If user is already authenticated, don't show login form
-  if (user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-slate-500">Redirecting to dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      await login(email, pass);
-      router.push('/');
-    } catch (err) {
-      // Error is handled by toast in AuthProvider
-    }
+    login(email, pass);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 dark:bg-slate-900">
+    <div className="min-h-screen flex items-center justify-center p-6 bg-background-light dark:bg-background-dark">
       <div className="w-full max-w-[440px] flex flex-col items-center">
         <div className="mb-8 text-center">
           <div className="size-14 bg-primary rounded-2xl flex items-center justify-center text-white shadow-xl shadow-primary/30 mb-5 mx-auto">
@@ -100,12 +51,8 @@ const Login: React.FC = () => {
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full h-14 bg-primary text-white font-extrabold rounded-2xl shadow-lg shadow-primary/30 hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50"
-            >
-              {loading ? 'Logging in...' : t('signInBtn')}
+            <button type="submit" className="w-full h-14 bg-primary text-white font-extrabold rounded-2xl shadow-lg shadow-primary/30 hover:opacity-90 active:scale-[0.98] transition-all">
+              {t('signInBtn')}
             </button>
           </form>
 
@@ -124,10 +71,7 @@ const Login: React.FC = () => {
               Continue with Google
             </button>
             <button
-              onClick={() => {
-                loginAsGuest();
-                router.push('/');
-              }}
+              onClick={loginAsGuest}
               className="w-full h-12 flex items-center justify-center bg-transparent border-2 border-slate-100 dark:border-slate-800 text-slate-500 font-bold rounded-xl text-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
             >
               {t('continueGuest')}
@@ -136,7 +80,7 @@ const Login: React.FC = () => {
         </div>
 
         <p className="mt-8 text-sm text-slate-500 font-medium">
-          Don't have an account? <Link href="/register" className="text-primary font-bold hover:underline">Sign up for free</Link>
+          Don't have an account? <a href="#" className="text-primary font-bold hover:underline">Sign up for free</a>
         </p>
       </div>
     </div>

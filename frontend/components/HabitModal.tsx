@@ -1,7 +1,6 @@
-'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useLanguage, useHabits, useAuth } from '../context/AppContext';
+import { useApp } from '../context/AppContext';
 // Fix: Import Habit from '../types' instead of '../constants'
 import { HABIT_COLORS } from '../constants';
 import { Habit, Frequency } from '../types';
@@ -13,9 +12,7 @@ interface HabitModalProps {
 }
 
 const HabitModal: React.FC<HabitModalProps> = ({ isOpen, onClose, editHabit }) => {
-  const { t } = useLanguage();
-  const { addHabit, updateHabit } = useHabits();
-  const { loading } = useAuth();
+  const { t, addHabit, updateHabit } = useApp();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [frequency, setFrequency] = useState<Frequency>('daily');
@@ -40,20 +37,16 @@ const HabitModal: React.FC<HabitModalProps> = ({ isOpen, onClose, editHabit }) =
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
-    try {
-      if (editHabit) {
-        await updateHabit(editHabit.id, { name, description, frequency, startDate, color });
-      } else {
-        await addHabit({ name, description, frequency, startDate, color });
-      }
-      onClose();
-    } catch (err) {
-      // Error is handled by toast in HabitsProvider
+    if (editHabit) {
+      updateHabit(editHabit.id, { name, description, frequency, startDate, color });
+    } else {
+      addHabit({ name, description, frequency, startDate, color });
     }
+    onClose();
   };
 
   return (
@@ -132,13 +125,8 @@ const HabitModal: React.FC<HabitModalProps> = ({ isOpen, onClose, editHabit }) =
           <button type="button" onClick={onClose} className="px-6 py-2.5 font-semibold text-slate-500 hover:text-slate-700 transition-colors">
             {t('cancel')}
           </button>
-          <button
-            type="submit"
-            onClick={handleSubmit}
-            disabled={loading}
-            className="px-8 py-2.5 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:opacity-90 transition-opacity disabled:opacity-50"
-          >
-            {loading ? 'Saving...' : t('saveHabit')}
+          <button type="submit" onClick={handleSubmit} className="px-8 py-2.5 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:opacity-90 transition-opacity">
+            {t('saveHabit')}
           </button>
         </div>
       </div>

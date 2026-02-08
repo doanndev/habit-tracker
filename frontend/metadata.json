@@ -1,0 +1,5 @@
+{
+  "name": "HabitPulse - Production Habit Tracker",
+  "description": "A high-fidelity, production-ready habit tracking application with streak calculation, activity heatmaps, i18n support, and theme switching.",
+  "requestFramePermissions": []
+}

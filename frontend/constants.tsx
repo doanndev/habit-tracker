@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 export const HABIT_COLORS = [
@@ -24,13 +25,6 @@ export const TRANSLATIONS: Record<string, any> = {
     emailLabel: 'Email address',
     passwordLabel: 'Password',
     signInBtn: 'Sign In',
-    signUpBtn: 'Sign Up',
-    createAccount: 'Create Account',
-    registerTitle: 'Join HabitPulse',
-    registerSubtitle: 'Start your habit-building journey today.',
-    confirmPasswordLabel: 'Confirm Password',
-    alreadyHaveAccount: 'Already have an account?',
-    signInLink: 'Sign in',
     continueGuest: 'Continue as Guest',
     todaysHabits: "Today's Habits",
     habitAnalytics: 'Habit Analytics',
@@ -60,13 +54,6 @@ export const TRANSLATIONS: Record<string, any> = {
     emailLabel: 'Địa chỉ Email',
     passwordLabel: 'Mật khẩu',
     signInBtn: 'Đăng nhập',
-    signUpBtn: 'Đăng ký',
-    createAccount: 'Tạo tài khoản',
-    registerTitle: 'Tham gia HabitPulse',
-    registerSubtitle: 'Bắt đầu hành trình xây dựng thói quen của bạn ngay hôm nay.',
-    confirmPasswordLabel: 'Xác nhận mật khẩu',
-    alreadyHaveAccount: 'Đã có tài khoản?',
-    signInLink: 'Đăng nhập',
     continueGuest: 'Tiếp tục với khách',
     todaysHabits: 'Thói quen hôm nay',
     habitAnalytics: 'Phân tích thói quen',

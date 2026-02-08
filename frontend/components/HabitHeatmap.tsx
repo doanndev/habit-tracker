@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Habit } from '../types';
 
@@ -36,9 +37,9 @@ const HabitHeatmap: React.FC<HeatmapProps> = ({ habit, color }) => {
           <span>Less</span>
           <div className="flex gap-1">
             {[0.1, 0.3, 0.6, 1].map(op => (
-              <div
-                key={op}
-                className="w-3 h-3 rounded-sm"
+              <div 
+                key={op} 
+                className="w-3 h-3 rounded-sm" 
                 style={{ backgroundColor: color, opacity: op }}
               />
             ))}
@@ -46,7 +47,7 @@ const HabitHeatmap: React.FC<HeatmapProps> = ({ habit, color }) => {
           <span>More</span>
         </div>
       </div>
-
+      
       <div className="hide-scrollbar overflow-x-auto">
         <div className="grid grid-flow-col grid-rows-7 gap-1.5 min-w-max">
           {days.map((day, idx) => (
