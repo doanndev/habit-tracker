@@ -17,7 +17,7 @@ export interface Habit {
 }
 
 export interface User {
-  email: string;
+  email: string
   avatar: string;
   level: number;
 }
