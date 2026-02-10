@@ -1,6 +1,6 @@
 import { Controller, Post, Body } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { RegisterDto, LoginDto, RefreshTokenDto } from './auth.dto';
+import { RegisterDto, LoginDto, RefreshTokenDto, GoogleAuthDto } from './auth.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -14,6 +14,11 @@ export class AuthController {
   @Post('login')
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
+  }
+
+  @Post('google')
+  async google(@Body() googleAuthDto: GoogleAuthDto) {
+    return this.authService.googleLogin(googleAuthDto.credential);
   }
 
   @Post('refresh')

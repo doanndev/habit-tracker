@@ -7,6 +7,11 @@ const API_BASE = (typeof import.meta !== 'undefined' && (import.meta as any).env
 
 interface HabitContextType {
   habits: Habit[];
+  isLoadingHabits: boolean;
+  isAddingHabit: boolean;
+  isUpdatingHabit: boolean;
+  isDeletingHabit: boolean;
+  isTogglingLog: boolean;
   addHabit: (habit: Omit<Habit, 'id' | 'logs'>) => Promise<void> | void;
   updateHabit: (id: string, updates: Partial<Habit>) => Promise<void> | void;
   deleteHabit: (id: string) => Promise<void> | void;
@@ -29,6 +34,11 @@ export const HabitProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return [];
     }
   });
+  const [isLoadingHabits, setIsLoadingHabits] = useState(false);
+  const [isAddingHabit, setIsAddingHabit] = useState(false);
+  const [isUpdatingHabit, setIsUpdatingHabit] = useState(false);
+  const [isDeletingHabit, setIsDeletingHabit] = useState(false);
+  const [isTogglingLog, setIsTogglingLog] = useState(false);
 
   // If user is logged-in (via API), fetch habits from backend. Otherwise keep localStorage-backed habits (guest)
   useEffect(() => {
@@ -36,6 +46,7 @@ export const HabitProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const load = async () => {
       const token = localStorage.getItem('access_token');
       if (user && token) {
+        setIsLoadingHabits(true);
         try {
           const res = await fetch(`${API_BASE}/habits`, {
             headers: {
@@ -58,6 +69,8 @@ export const HabitProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         } catch (err) {
           console.error('Error loading habits from API', err);
           toastError('error');
+        } finally {
+          if (mounted) setIsLoadingHabits(false);
         }
       } else {
         // guest or logged out: load from localStorage (already done in initial state)
@@ -78,6 +91,7 @@ export const HabitProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const addHabit = async (habitData: Omit<Habit, 'id' | 'logs'>) => {
     const token = localStorage.getItem('access_token');
     if (user && token) {
+      setIsAddingHabit(true);
       try {
         const res = await fetch(`${API_BASE}/habits`, {
           method: 'POST',
@@ -100,6 +114,8 @@ export const HabitProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       } catch (err) {
         console.error(err);
         toastError('error');
+      } finally {
+        setIsAddingHabit(false);
       }
     } else {
       const newHabit: Habit = {
@@ -114,6 +130,7 @@ export const HabitProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateHabit = async (id: string, updates: Partial<Habit>) => {
     const token = localStorage.getItem('access_token');
     if (user && token) {
+      setIsUpdatingHabit(true);
       try {
         const res = await fetch(`${API_BASE}/habits/${id}`, {
           method: 'PATCH',
@@ -135,6 +152,8 @@ export const HabitProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       } catch (err) {
         console.error(err);
         toastError('error');
+      } finally {
+        setIsUpdatingHabit(false);
       }
     } else {
       setHabits(prev => prev.map(h => h.id === id ? { ...h, ...updates } : h));
@@ -144,6 +163,7 @@ export const HabitProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const deleteHabit = async (id: string) => {
     const token = localStorage.getItem('access_token');
     if (user && token) {
+      setIsDeletingHabit(true);
       try {
         const res = await fetch(`${API_BASE}/habits/${id}`, {
           method: 'DELETE',
@@ -154,6 +174,8 @@ export const HabitProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       } catch (err) {
         console.error(err);
         toastError('error');
+      } finally {
+        setIsDeletingHabit(false);
       }
     } else {
       setHabits(prev => prev.filter(h => h.id !== id));
@@ -163,6 +185,7 @@ export const HabitProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const toggleHabitLog = async (habitId: string, date: string) => {
     const token = localStorage.getItem('access_token');
     if (user && token) {
+      setIsTogglingLog(true);
       try {
         // Check existing logs for the habit
         const logsRes = await fetch(`${API_BASE}/habits/${habitId}/logs`, { headers: { Authorization: `Bearer ${token}` } });
@@ -198,6 +221,8 @@ export const HabitProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       } catch (err) {
         console.error(err);
         toastError('error');
+      } finally {
+        setIsTogglingLog(false);
       }
     } else {
       setHabits(prev => prev.map(habit => {
@@ -215,7 +240,7 @@ export const HabitProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   return (
-    <HabitContext.Provider value={{ habits, addHabit, updateHabit, deleteHabit, toggleHabitLog }}>
+    <HabitContext.Provider value={{ habits, isLoadingHabits, isAddingHabit, isUpdatingHabit, isDeletingHabit, isTogglingLog, addHabit, updateHabit, deleteHabit, toggleHabitLog }}>
       {children}
     </HabitContext.Provider>
   );

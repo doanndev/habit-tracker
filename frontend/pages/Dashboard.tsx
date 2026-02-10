@@ -4,19 +4,23 @@ import { useHabits } from '../context/HabitContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
+import { useToast } from '../context/ToastContext';
 import HabitHeatmap from '../components/HabitHeatmap';
 import HabitModal from '../components/HabitModal';
 import { calculateStats } from '../utils/streak';
 import { Habit } from '../types';
 
 const Dashboard: React.FC = () => {
-  const { habits, toggleHabitLog } = useHabits();
+  const { habits, toggleHabitLog, deleteHabit, isLoadingHabits, isAddingHabit, isUpdatingHabit, isDeletingHabit, isTogglingLog } = useHabits();
   const { user, logout } = useAuth();
   const { t, language, setLanguage } = useLanguage();
   const { theme, toggleTheme } = useTheme();
+  const { success: toastSuccess } = useToast();
   const [selectedHabitId, setSelectedHabitId] = useState<string | null>(habits[0]?.id || null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Habit | undefined>(undefined);
+  const [habitToDelete, setHabitToDelete] = useState<Habit | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const selectedHabit = habits.find(h => h.id === selectedHabitId) || habits[0];
   const stats = useMemo(() => selectedHabit ? calculateStats(selectedHabit) : null, [selectedHabit, habits]);
@@ -32,6 +36,24 @@ const Dashboard: React.FC = () => {
   const handleAddNew = () => {
     setEditingHabit(undefined);
     setIsModalOpen(true);
+  };
+
+  const handleDelete = (habit: Habit) => {
+    setHabitToDelete(habit);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (habitToDelete) {
+      await deleteHabit(habitToDelete.id);
+      toastSuccess('Habit deleted successfully!');
+      setIsDeleteModalOpen(false);
+      setHabitToDelete(null);
+      // Nếu habit đang được chọn bị xóa, chọn habit đầu tiên
+      if (selectedHabitId === habitToDelete.id) {
+        setSelectedHabitId(habits.find(h => h.id !== habitToDelete.id)?.id || null);
+      }
+    }
   };
 
   return (
@@ -103,7 +125,18 @@ const Dashboard: React.FC = () => {
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 relative">
+              {isLoadingHabits && (
+                <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-3xl flex items-center justify-center z-10">
+                  <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400">
+                    <svg className="animate-spin h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span className="font-medium">Loading habits...</span>
+                  </div>
+                </div>
+              )}
               {habits.length === 0 ? (
                 <div className="p-10 text-center bg-white dark:bg-slate-900 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800">
                   <p className="text-slate-500 font-medium mb-4">{t('noHabits')}</p>
@@ -139,14 +172,26 @@ const Dashboard: React.FC = () => {
                       </div>
                       <button
                         onClick={(e) => { e.stopPropagation(); toggleHabitLog(habit.id, todayStr); }}
-                        className={`w-full font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all ${
+                        disabled={isTogglingLog}
+                        className={`w-full font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                           isDone
                           ? 'bg-emerald-500 text-white'
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                         }`}
                       >
-                        {isDone && <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"></path></svg>}
-                        <span>{isDone ? 'Completed' : t('checkIn')}</span>
+                        {isTogglingLog ? (
+                          <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        ) : isDone ? (
+                          <>
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"></path></svg>
+                            <span>Completed</span>
+                          </>
+                        ) : (
+                          <span>{t('checkIn')}</span>
+                        )}
                       </button>
                     </div>
                   );
@@ -171,6 +216,12 @@ const Dashboard: React.FC = () => {
                       className="px-6 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                     >
                       {t('editHabit')}
+                    </button>
+                    <button
+                      onClick={() => handleDelete(selectedHabit)}
+                      className="p-2.5 text-rose-500 border border-rose-200 dark:border-rose-800 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     </button>
                     <button className="p-2.5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
@@ -258,6 +309,45 @@ const Dashboard: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         editHabit={editingHabit}
       />
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && habitToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 p-8 max-w-md w-full mx-4">
+            <div className="text-center mb-6">
+              <div className="size-16 bg-rose-100 dark:bg-rose-950/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Delete Habit</h3>
+              <p className="text-slate-500 dark:text-slate-400">
+                Are you sure you want to delete "<span className="font-bold text-slate-900 dark:text-white">{habitToDelete.name}</span>"? This action cannot be undone and will remove all associated data.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="flex-1 py-3 px-4 text-sm font-bold text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={isDeletingHabit}
+                className="flex-1 py-3 px-4 text-sm font-bold text-white bg-rose-500 rounded-xl hover:bg-rose-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              >
+                {isDeletingHabit ? (
+                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : (
+                  'Delete'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

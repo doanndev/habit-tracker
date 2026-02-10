@@ -21,3 +21,8 @@ export class RefreshTokenDto {
   @IsNotEmpty()
   refresh_token: string;
 }
+
+export class GoogleAuthDto {
+  @IsNotEmpty()
+  credential: string;
+}

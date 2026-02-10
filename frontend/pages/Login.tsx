@@ -1,17 +1,42 @@
 
 import React, { useState } from 'react';
+import { GoogleLogin } from '@react-oauth/google';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 const Login: React.FC = () => {
   const { t } = useLanguage();
-  const { login, loginAsGuest } = useAuth();
+  const { login, loginAsGuest, isLoggingIn } = useAuth();
+  const { toast: toastInfo, error: toastError } = useToast();
   const [email, setEmail] = useState('');
   const [pass, setPass] = useState('');
+  const API_BASE = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_URL) || 'http://localhost:3000';
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     login(email, pass);
+  };
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential: credentialResponse.credential })
+      });
+      if (!res.ok) throw new Error('Google login failed');
+      const data = await res.json();
+      if (data.access_token && data.refresh_token && data.user) {
+        localStorage.setItem('access_token', data.access_token);
+        localStorage.setItem('refresh_token', data.refresh_token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        window.location.reload();
+      }
+    } catch {
+      toastError('Google login failed');
+    }
   };
 
   return (
@@ -55,8 +80,15 @@ const Login: React.FC = () => {
               />
             </div>
 
-            <button type="submit" className="w-full h-14 bg-primary text-white font-extrabold rounded-2xl shadow-lg shadow-primary/30 hover:opacity-90 active:scale-[0.98] transition-all">
-              {t('signInBtn')}
+            <button type="submit" disabled={isLoggingIn} className="w-full h-14 bg-primary text-white font-extrabold rounded-2xl shadow-lg shadow-primary/30 hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
+              {isLoggingIn ? (
+                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : (
+                t('signInBtn')
+              )}
             </button>
           </form>
 
@@ -70,10 +102,12 @@ const Login: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            <button className="w-full h-12 flex items-center justify-center gap-3 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-              <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" className="w-5 h-5" alt="Google" />
-              Continue with Google
-            </button>
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => toastError('Google login failed')}
+              width="100%"
+              useOneTap
+            />
             <button
               onClick={loginAsGuest}
               className="w-full h-12 flex items-center justify-center bg-transparent border-2 border-slate-100 dark:border-slate-800 text-slate-500 font-bold rounded-xl text-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"

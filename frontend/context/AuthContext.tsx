@@ -6,6 +6,7 @@ const API_BASE = (typeof import.meta !== 'undefined' && (import.meta as any).env
 
 interface AuthContextType {
   user: User | null;
+  isLoggingIn: boolean;
   login: (email: string, pass: string) => Promise<void> | void;
   loginAsGuest: () => void;
   logout: () => void;
@@ -25,10 +26,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return null;
     }
   });
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const { success, toast: toastInfo, error: toastError } = useToast();
 
   const login = async (email: string, pass: string) => {
+    setIsLoggingIn(true);
     try {
       const res = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
@@ -68,6 +71,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Login error', err);
       toastError('error');
       throw err;
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -85,11 +90,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('habits');
     toastInfo('logoutSuccess', { icon: '👋' });
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, loginAsGuest, logout }}>
+    <AuthContext.Provider value={{ user, isLoggingIn, login, loginAsGuest, logout }}>
       {children}
     </AuthContext.Provider>
   );

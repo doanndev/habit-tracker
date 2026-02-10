@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { OAuth2Client } from 'google-auth-library';
 import { User } from '../users/user.entity';
 import { RegisterDto, LoginDto } from './auth.dto';
 
@@ -85,5 +86,40 @@ export class AuthService {
     } catch {
       throw new UnauthorizedException('Invalid refresh token');
     }
+  }
+
+  async googleLogin(credential: string): Promise<{ access_token: string; refresh_token: string; user: any }> {
+    const client = new OAuth2Client();
+    let ticket;
+    try {
+      ticket = await client.verifyIdToken({ idToken: credential, audience: process.env.GOOGLE_CLIENT_ID });
+    } catch {
+      throw new UnauthorizedException('Invalid Google credential');
+    }
+    const payload = ticket.getPayload();
+    if (!payload?.email) throw new UnauthorizedException('No email in Google payload');
+
+    // Tìm hoặc tạo user
+    let user = await this.userRepository.findOne({ where: { email: payload.email } });
+    if (!user) {
+      user = this.userRepository.create({
+        email: payload.email,
+        password_hash: '', // Không cần password cho Google login
+      });
+      await this.userRepository.save(user);
+    }
+
+    const jwtPayload = { email: user.email, sub: user.id };
+    return {
+      access_token: this.jwtService.sign(jwtPayload, { expiresIn: process.env.ACCESS_TOKEN_TTL || '5m' } as any),
+      refresh_token: this.jwtService.sign(jwtPayload, { expiresIn: process.env.REFRESH_TOKEN_TTL || '7d' } as any),
+      user: {
+        id: user.id,
+        email: user.email,
+        name: payload.name || user.email.split('@')[0],
+        avatar: payload.picture || 'https://picsum.photos/seed/google/100/100',
+        level: 1,
+      },
+    };
   }
 }
