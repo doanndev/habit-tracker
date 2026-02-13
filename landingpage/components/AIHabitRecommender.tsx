@@ -9,11 +9,11 @@ const AIHabitRecommender: React.FC = () => {
 
   const handleSuggest = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!goal.trim()) return;
-    setLoading(true);
-    const results = await getHabitRecommendations(goal);
-    setRecommendations(results);
-    setLoading(false);
+    // if (!goal.trim()) return;
+    // setLoading(true);
+    // const results = await getHabitRecommendations(goal);
+    // setRecommendations(results);
+    // setLoading(false);
   };
 
   return (
