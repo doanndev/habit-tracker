@@ -25,7 +25,10 @@ jobs:
       # Build and push backend image
       - name: Build and push backend image
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/habit-tracker-backend:latest ./backend
+          docker build \
+            --build-arg NODE_VERSION=20 \
+            -t ${{ secrets.DOCKERHUB_USERNAME }}/habit-tracker-backend:latest \
+            ./backend
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/habit-tracker-backend:latest
 
       # Build and push frontend image
